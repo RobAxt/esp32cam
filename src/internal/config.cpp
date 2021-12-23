@@ -54,6 +54,7 @@ Config::setPins(const Pins& pins)
   m_cfg->pin_vsync = pins.VSYNC;
   m_cfg->pin_href = pins.HREF;
   m_cfg->pin_pclk = pins.PCLK;
+  ledPin = pins.LED;
   return *this;
 }
 

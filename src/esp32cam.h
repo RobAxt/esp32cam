@@ -11,6 +11,8 @@
 #include "internal/frame.hpp"
 
 #include <memory>
+#include <algorithm>
+#include "driver/ledc.h"
 
 namespace esp32cam {
 
@@ -55,6 +57,23 @@ public:
   {
     return streamMjpeg(client, StreamMjpegConfig());
   }
+
+  struct PWMLedConfig
+  {
+    /** @brief free PWM channel (some channels used by camera) */
+    const int ledChannel = LEDC_CHANNEL_7;
+    /** @brief 50K pwm frequency */
+    const int pwmfreq = 50000;
+    /** @brief duty cycle bit range */
+    const int pwmresolution = 9;
+    /** @brief maximum pwm resolution */
+    const int pwmMax = pow(2,pwmresolution)-1;
+    /** @brief led pinout */
+    int ledPin;
+  } led;
+
+  /** @brief Set LED Brightness */
+  void setLEDBrightness(int value);
 };
 
 /** @brief ESP32 camera API. */

@@ -50,6 +50,9 @@ private:
   class CameraConfigT; ///< camera_config_t
   CameraConfigT* m_cfg;
 
+  /** @brief Led pinout */
+  int ledPin;
+  
   friend class CameraClass;
 };
 

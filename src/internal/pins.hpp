@@ -22,6 +22,7 @@ struct Pins
   int SCL;
   int RESET;
   int PWDN;
+  int LED;
 };
 
 namespace pins {
@@ -44,6 +45,7 @@ constexpr Pins AiThinker{
   SCL: 27,
   RESET: -1,
   PWDN: 32,
+  LED:  4,
 };
 
 /** @brief Pin definition for M5Stack M5Camera. */
@@ -64,6 +66,7 @@ constexpr Pins M5Camera{
   SCL: 23,
   RESET: 15,
   PWDN: -1,
+  LED:  -1, 
 };
 
 /**
@@ -88,6 +91,7 @@ constexpr Pins M5CameraLED{
   SCL: 23,
   RESET: 15,
   PWDN: 14,
+  LED:  -1,
 };
 
 /** @brief Pin definition for TTGO ESP32-CAM. */
@@ -108,6 +112,7 @@ constexpr Pins TTGO{
   SCL: 12,
   RESET: -1,
   PWDN: -1,
+  LED:  -1,
 };
 
 } // namespace pins

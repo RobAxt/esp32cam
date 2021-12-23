@@ -10,6 +10,12 @@ CameraClass Camera;
 bool
 CameraClass::begin(const Config& config)
 {
+  led.ledPin = config.ledPin;
+  if(led.ledPin != -1)
+  {
+    ledcSetup(led.ledChannel, led.pwmfreq, led.pwmresolution);
+    ledcAttachPin(led.ledPin, led.ledChannel);
+  }
   return esp_camera_init(reinterpret_cast<const camera_config_t*>(config.m_cfg)) == ESP_OK;
 }
 
@@ -82,6 +88,15 @@ CameraClass::streamMjpeg(Client& client, const StreamMjpegConfig& cfg)
   }
   return nFrames;
 #undef BOUNDARY
+}
+
+void 
+CameraClass::setLEDBrightness(int value)
+{
+  if(led.ledPin != -1)
+  {
+    ledcWrite(led.ledChannel, round((pow(2,(1+(value)*0.02)))-2)/6*led.pwmMax); // Apply a logarithmic function to the scale.
+  }
 }
 
 } // namespace esp32cam
