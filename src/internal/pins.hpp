@@ -66,7 +66,7 @@ constexpr Pins M5Camera{
   SCL: 23,
   RESET: 15,
   PWDN: -1,
-  LED:  -1, 
+  LED:  -1,
 };
 
 /**

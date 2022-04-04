@@ -1,12 +1,13 @@
-#include "WifiCam.hpp"
+#include "AsyncCam.hpp"
 #include <WiFi.h>
 
 static const char* WIFI_SSID = "my-ssid";
 static const char* WIFI_PASS = "my-pass";
 
 esp32cam::Resolution initialResolution;
+esp32cam::Resolution currentResolution;
 
-WebServer server(80);
+AsyncWebServer server(80);
 
 void
 setup()
@@ -18,6 +19,7 @@ setup()
     using namespace esp32cam;
 
     initialResolution = Resolution::find(1024, 768);
+    currentResolution = initialResolution;
 
     Config cfg;
     cfg.setPins(pins::AiThinker);
@@ -56,5 +58,8 @@ setup()
 void
 loop()
 {
-  server.handleClient();
+  // esp32cam-asyncweb.h depends on FreeRTOS task API including vTaskDelete, so you must have a
+  // non-zero delay in the loop() function; otherwise, FreeRTOS kernel memory cannot be freed
+  // properly and the system would run out of memory.
+  delay(1);
 }

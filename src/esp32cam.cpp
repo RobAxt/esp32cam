@@ -25,6 +25,22 @@ CameraClass::end()
   return esp_camera_deinit() == ESP_OK;
 }
 
+ResolutionList
+CameraClass::listResolutions() const
+{
+  sensor_t* sensor = esp_camera_sensor_get();
+  if (sensor == nullptr) {
+    return ResolutionList();
+  }
+
+  camera_sensor_info_t* info = esp_camera_sensor_get_info(&sensor->id);
+  if (info == nullptr) {
+    return ResolutionList();
+  }
+
+  return ResolutionList(info->max_size + 1);
+}
+
 bool
 CameraClass::changeResolution(const Resolution& resolution, int sleepFor)
 {
@@ -41,7 +57,9 @@ CameraClass::changeResolution(const Resolution& resolution, int sleepFor)
   if (sensor->set_framesize(sensor, frameSize) != 0) {
     return false;
   }
-  delay(sleepFor);
+  if (sleepFor > 0) {
+    delay(sleepFor);
+  }
   return true;
 }
 
@@ -56,38 +74,43 @@ CameraClass::capture()
 }
 
 int
-CameraClass::streamMjpeg(Client& client, const StreamMjpegConfig& cfg)
+CameraClass::streamMjpeg(Client& client, const MjpegConfig& cfg)
 {
-#define BOUNDARY "e8b8c539-047d-4777-a985-fbba6edff11e"
-  client.print("HTTP/1.1 200 OK\r\n"
-               "Content-Type: multipart/x-mixed-replace;boundary=" BOUNDARY "\r\n"
-               "\r\n");
-  auto lastCapture = millis();
-  int nFrames;
-  for (nFrames = 0; cfg.maxFrames < 0 || nFrames < cfg.maxFrames; ++nFrames) {
-    auto now = millis();
-    auto sinceLastCapture = now - lastCapture;
-    if (static_cast<int>(sinceLastCapture) < cfg.minInterval) {
-      delay(cfg.minInterval - sinceLastCapture);
-    }
-    lastCapture = millis();
+  detail::MjpegHeader hdr;
+  hdr.prepareResponseHeaders();
+  hdr.writeTo(client);
 
-    auto frame = capture();
-    if (frame == nullptr) {
-      break;
+  using Ctrl = detail::MjpegController;
+  Ctrl ctrl(cfg);
+  while (true) {
+    auto act = ctrl.decideAction();
+    switch (act) {
+      case Ctrl::CAPTURE: {
+        ctrl.notifyCapture();
+        break;
+      }
+      case Ctrl::RETURN: {
+        ctrl.notifyReturn(capture());
+        break;
+      }
+      case Ctrl::SEND: {
+        hdr.preparePartHeader(ctrl.getFrame()->size());
+        hdr.writeTo(client);
+        ctrl.notifySent(ctrl.getFrame()->writeTo(client, cfg.frameTimeout));
+        hdr.preparePartTrailer();
+        hdr.writeTo(client);
+        break;
+      }
+      case Ctrl::STOP: {
+        client.stop();
+        return ctrl.countSentFrames();
+      }
+      default: {
+        delay(act);
+        break;
+      }
     }
-
-    client.printf("Content-Type: image/jpeg\r\n"
-                  "Content-Length: %d\r\n"
-                  "\r\n",
-                  static_cast<int>(frame->size()));
-    if (!frame->writeTo(client, cfg.frameTimeout)) {
-      break;
-    }
-    client.print("\r\n--" BOUNDARY "\r\n");
   }
-  return nFrames;
-#undef BOUNDARY
 }
 
 void 
@@ -99,4 +122,9 @@ CameraClass::setLEDBrightness(int value)
   }
 }
 
+int 
+CameraClass::getLEDBrightness()
+{
+  return 100*ledcRead(led.ledChannel)/512;
+}
 } // namespace esp32cam
